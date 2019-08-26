@@ -1,0 +1,100 @@
+import boto3
+import json
+import logging
+import os
+import re
+import pprint
+
+from base64 import b64decode
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
+
+HOOK_URL = os.environ['WebHookUrl']
+SLACK_CHANNEL = os.environ['slackChannel']
+qname = os.environ['QueueName']
+ctregion = os.environ['CloudTrailRegion']
+sqs_queue_url = os.environ['SQS_URL']
+
+sqs_client = boto3.client('sqs')
+sqs = boto3.resource('sqs')
+queue = sqs.get_queue_by_name(QueueName=qname)
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def lambda_handler(event, context):
+    while True:
+        try:
+            msg_list = queue.receive_messages(
+                QueueUrl=sqs_queue_url,
+                MaxNumberOfMessages=1,
+                WaitTimeSeconds=0,
+                VisibilityTimeout=0
+            )
+        except ClientError as e:
+            logging.error(e)
+            break
+        if msg_list is not None:
+            for message in msg_list:
+                
+                json_dict = json.loads(message.body)
+                print(json_dict)
+                evtid = json_dict['EventId']
+                evtidurl = ('https://' + ctregion + '.console.aws.amazon.com/cloudtrail/home?region=' + ctregion + '#/events?EventId=' + evtid)
+                evtname = json_dict['EventName']
+                evtrname = '\n'.join(json_dict['ResourceName'])
+                evtarn = json_dict['arn']
+                evturl = json_dict['ConfigStream URL']
+
+                # create send slack message
+                sendmsg = {
+                    "attachments": [
+                        {
+                            "color": "#36a64f",
+                            "author_name": "ユーザー操作警察",
+                            "title": "AWS環境に人為的な変更が行われました",
+                            "title_link": evturl,
+                            "fields": [
+                                {
+                                    "title": "Action",
+                                    "value": evtname,
+                                    "short": "true"
+                                },
+                                {
+                                    "title": "ResourceName",
+                                    "value": evtrname,
+                                    "short": "true"
+                                },
+                                {
+                                    "title": "arn",
+                                    "value": evtarn,
+                                    "short": "false"
+                                },
+                                {
+                                    "title": "EventID",
+                                    "value": evtidurl,
+                                    "short": "false"
+                                }
+                            ]
+                        }
+                    ]
+                }
+                req = Request(HOOK_URL, data=json.dumps(sendmsg).encode("utf-8"))
+                try:
+                    response = urlopen(req)
+                    response.read()
+                    logger.info("Message posted to %s", SLACK_CHANNEL)
+                    message.delete()
+                    """
+                    message.delete(
+                        QueueUrl=sqs_queue_url,
+                        ReceiptHandle=message['receipt_handle']
+                    )
+                    """
+                except HTTPError as e:
+                    logger.error("Request failed: %d %s", e.code, e.reason)
+                except URLError as e:
+                    logger.error("Server connection failed: %s", e.reason)
+        else:
+            break
+            

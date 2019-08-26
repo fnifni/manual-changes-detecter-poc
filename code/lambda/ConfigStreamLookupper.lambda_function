@@ -1,0 +1,110 @@
+import boto3
+import json
+import os
+import sys
+import datetime
+import pprint
+from datetime import timedelta
+
+qname1 = os.environ['dispatch_Queue_Name']
+qname2 = os.environ['slack_Queue_Name']
+
+sqs_client = boto3.client('sqs')
+sqs = boto3.resource('sqs')
+ctclient = boto3.client('cloudtrail')
+queue1 = sqs.get_queue_by_name(QueueName=qname1)
+queue2 = sqs.get_queue_by_name(QueueName=qname2)
+excluder = os.environ['exclude_resouce_type']
+trustarn = os.environ['Trust_arn']
+trustarry = trustarn.split(',')
+print(trustarry)
+
+def lambda_handler(event, context):
+    while True:
+        msg_list = queue1.receive_messages()
+        if msg_list:
+            for message in msg_list:
+                print(format(message.body))
+                
+                cbody = json.loads(message.body)
+                ctime = cbody['configurationItem']['configurationItemCaptureTime']
+                cresouce = cbody['configurationItem']['resourceType']
+                if excluder in cresouce:
+                    print('[INFO]: Skipping operation because it is a exclude resouce type')
+                    message.delete()
+                    continue                    
+                cdt = datetime.datetime.strptime(ctime, '%Y-%m-%dT%H:%M:%S.%fZ')
+                tdt = cdt - timedelta(seconds=300)
+                ourl = cbody['s3url']
+
+                # lookup CloudTrail event
+                ctevt = ctclient.lookup_events(
+                    LookupAttributes=[
+                        {
+                            'AttributeKey': 'ResourceType',
+                            'AttributeValue': cresouce
+                        },
+                    ],
+                    StartTime=tdt,
+                    EndTime=cdt,
+                    MaxResults=100
+                )
+                print(ctevt)
+                
+                # check lookup-event result
+                if ctevt['Events']:
+                    for evt in ctevt['Events']:
+                        print('[INFO] start Events Parse')
+                        pprint.pprint(evt)
+                        evtid = evt['EventId']
+                        evtname = evt['EventName']
+                        
+                        # get resources list
+                        evtrlist = []
+                        for evtrsrc in evt['Resources']:
+                            evtrname = evtrsrc['ResourceName']
+                            evtrlist.append(evtrname)
+
+                        # check exist arn
+                        t = json.loads(evt['CloudTrailEvent'])['userIdentity']
+                        if 'arn' not in t:
+                            print('[INFO]: arn is not exist ! skip to next event')
+                            message.delete()
+                            continue
+    
+                        evtarn = json.loads(evt['CloudTrailEvent'])['userIdentity']['arn']
+    
+                        # Skip if arn is in the list of "trastarn" 
+                        for tarn in trustarry:
+                            print('evtarn is ', evtarn)
+                            print('tarn is ', tarn)
+                            if evtarn in tarn:
+                                print('[INFO]: Skipping operation because it is a trusted arn')
+                                message.delete()
+                                continue
+                        
+                        # generate send queue message
+                        ctdata = {
+                            'EventId': evtid,
+                            'EventName': evtname,
+                            'ResourceName': evtrlist,
+                            'arn': evtarn,
+                            'ConfigStream URL': ourl
+                        } 
+                        ctjson = json.dumps(ctdata)
+                        print(ctjson)
+                        
+                        # send sqs
+                        ret = queue2.send_message(MessageBody=ctjson)
+                        print(ret)
+                        message.delete()
+                else:
+                    print('[WARN] The lookup-event result was empty. Retry processing.')
+                    message.delete()
+                    cjson = json.dumps(cbody)
+                    # resend sqs
+                    ret = queue1.send_message(MessageBody=cjson,MessageGroupId='config-stream-dispatcher')
+                    print(ret)
+
+        else:   
+            break
