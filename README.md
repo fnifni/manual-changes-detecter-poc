@@ -5,7 +5,7 @@
 - 信頼するarnを登録することで、特定arnが行った変更について、通知を除外する機能を有しています
 
 ## Slack通知概要
-[slack-nortify.png](/docs/pixs/slack-nortify.png)
+![slack-nortify.png](/docs/pixs/slack-nortify.png)
 
 タイトル
 - s3にバックアップしたConfig Stream本文へのハイパーリンク
