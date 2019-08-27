@@ -1,35 +1,61 @@
 # AWS環境設定
 # 前提条件
 本PoC構成は、AWSアカウント毎、各リージョン毎に構成する
+# Config
+## Recording is on
+- Configを有効にする
+## Resource types to record
+- [*] Record all resources supported in this region
+- [*] Include global resources (適宜設定要否を判断すること)
+## Amazon S3 bucket
+- 適宜設定
+- Config Snapshotの格納先
+
+## Amazon SNS topic
+- [*] Stream configuration changes and notifications to an Amazon SNS topic.
+- トピックは適宜作成すること
+
+## AWS Config role
+- 自身で作成したConfigのサービスロール(Config - Customizable)に以下を適用する
+
+### Manged IAM Policy
+- AWSConfigRole
+- AmazonSNSFullAccess
+
+### Custom IAM Policy
+- [Limited-ConfigStream2sqs.json](/code/iam/Limited-ConfigStream2sqs.json)
+
 # SQS
 - Dead Letter Queueは適宜設定すること
 
-## ConfigStreamQueue
+## Dispatch_SQS
 Queue Name
 
-- ConfigStreamQueue
+- Dispatch_SQS
 
 Queue Type
 
 - Standard
 
-### Add Permissions
+### Add Permissions 1
 Principals
 
-- arn:aws:iam::AWS_ACCOUNT_ID:root
+- AWS_ACCOUNT_ID
+- 実行環境のAWSアカウントIDを登録(12桁数字, ハイフンを除く)
 
 Actions
 
 - SQS:SendMessage
- 
-Resource
 
-- arn:aws:sqs:REGION:AWS_ACCOUNT_ID:ConfigStreamQueue
+### Add Permissions 2
+[チュートリアルSNSトピックへSQSをサブスクライブする](https://docs.aws.amazon.com/ja_jp/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-subscribe-queue-sns-topic.html) 参照
 
-## ConfigStreamQueue.fifo
+- SNSの設定後に作業すること
+
+## Lookup_SQS.fifo
 Queue Name
 
-- ConfigStreamQueue.fifo
+- Lookup_SQS.fifo
 
 Queue Type
 
@@ -43,16 +69,18 @@ Content-Based Deduplication
 
 - Enable
 
-## ConfigStream2slack
+## Slack_SQS
 Queue Name
 
-- ConfigStream2slack
+- Slack_SQS
 
 # SNS
+- Config設定時に作成したものを利用する
+
 ## Details
 Name
 
-- ConfigStreamTopic
+- config-topic
 
 ## Subscriptions
 Protocol
@@ -61,11 +89,11 @@ Protocol
 
 Endpoint
 
-- arn:aws:sqs:REGION:AWS_ACCOUNT_ID:ConfigStreamQueue
+- arn:aws:sqs:REGION:AWS_ACCOUNT_ID:Dispatch_SQS
 
 # s3
 - 必要に応じて作成
-- 便宜上バケット名は"config-stream-backup"とします
+- 本ドキュメントでは、便宜上バケット名を"config-stream-backup"とします
 
 # Config
 ## Recording is on
@@ -96,14 +124,14 @@ Code
 - [ConfigStreamDispatcher.lambda_function](/code/lambda/ConfigStreamDispatcher.lambda_function)
 
 ### Environment variables
-SQSやバケット名などを変更している場合は、適宜置き換えてること
+- SQSやバケット名などを変更している場合は、適宜置き換えてること
 
 |key|value|
 |:---|:---|
-|ConfigStream_Queue_Name|ConfigStreamQueue|
-|ConfigStream_backup_backet|config-stream-backup|
+|ConfigStream_Queue_Name|Dispatch_SQS|
+|ConfigStream_backup_backet|config-stream-backup (適宜変更すること)|
 |backet_region|s3バケットの配置リージョンを入力|
-|dispatch_Queue_Name|ConfigStreamQueue.fifo|
+|dispatch_Queue_Name|Lookup_SQS.fifo|
 
 ### Role Attached Policy
 - [Limited-s3-put-configstream-backup.json](/code/iam/Limited-s3-put-configstream-backup.json)
@@ -125,14 +153,14 @@ Code
 - [ConfigStreamLookupper.lambda_function](/code/lambda/ConfigStreamLookupper.lambda_function)
 
 ### Environment variables
-SQSやバケット名などを変更している場合は、適宜置き換えてること
+- SQSを変更している場合は、適宜置き換えてること
 
 |key|value|
 |:---|:---|
 |Trust_arn|(記入例) arn:aws:sts::AWS_ACCOUNT_ID:assumed-role/AWSServiceRoleForAWSCloud9/aws-cloud9,arn:aws:sts::AWS_ACCOUNT_ID:assumed-role/AWSServiceRoleForAWSCloud8/aws-cloud8|
-|slack_Queue_Name|ConfigStream2slack|
+|slack_Queue_Name|Slack_SQS|
 |exclude_resouce_type|AWS::SSM::ManagedInstanceInventory|
-|dispatch_Queue_Name|ConfigStreamQueue.fifo|
+|dispatch_Queue_Name|Lookup_SQS.fifo|
 
 ### Role Attached Policy
 - [Limited-CloudTrail-lookupevents.json](/code/iam/Limited-CloudTrail-lookupevents.json)
@@ -160,10 +188,10 @@ Code
 |key|value|
 |:---|:---|
 |CloudTrailRegion|参照するCloudTrailのリージョンを指定|
-|slack_Queue_Name|ConfigStream2slack|
+|slack_Queue_Name|Slack_SQS|
 |WebHookUrl|https://hooks.slack.com/services/xxxxx/yyyyy|
 |slackChannel|#channel-name|
-|SQS_URL|https://sqs.REGION.amazonaws.com/AWS_ACCOUNT_ID/ConfigStream2slack|
+|SQS_URL|https://sqs.REGION.amazonaws.com/AWS_ACCOUNT_ID/Slack_SQS|
 
 ### Role Attached Policy
 - [Limited-sqs-ConfigStream2Slack.json](/code/iam/Limited-sqs-ConfigStream2Slack.json)
