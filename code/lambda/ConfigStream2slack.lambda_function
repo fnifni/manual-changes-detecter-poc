@@ -11,7 +11,7 @@ from urllib.error import URLError, HTTPError
 
 HOOK_URL = os.environ['WebHookUrl']
 SLACK_CHANNEL = os.environ['slackChannel']
-qname = os.environ['QueueName']
+qname = os.environ['slack_Queue_Name']
 ctregion = os.environ['CloudTrailRegion']
 sqs_queue_url = os.environ['SQS_URL']
 
