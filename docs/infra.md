@@ -191,7 +191,6 @@ Code
 |slack_Queue_Name|Slack_SQS|
 |WebHookUrl|https://hooks.slack.com/services/xxxxx/yyyyy|
 |slackChannel|#channel-name|
-|SQS_URL|https://sqs.REGION.amazonaws.com/AWS_ACCOUNT_ID/Slack_SQS|
 
 ### Role Attached Policy
 - [Limited-sqs-ConfigStream2Slack.json](/code/iam/Limited-sqs-ConfigStream2Slack.json)
@@ -201,3 +200,15 @@ Code
 Timeout
 
 - 30sec
+
+# Cloudwatch Events
+## Event Source
+- [*] Schedule
+- Fixed rate of "1 Minutes"
+
+## Targets
+Lambda function
+
+- ConfigStreamDispatcher
+- ConfigStreamLookupper
+- ConfigStream2slack
