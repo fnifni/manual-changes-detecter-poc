@@ -2,7 +2,6 @@ import boto3
 import json
 import logging
 import os
-import re
 import pprint
 
 from base64 import b64decode
@@ -13,9 +12,7 @@ HOOK_URL = os.environ['WebHookUrl']
 SLACK_CHANNEL = os.environ['slackChannel']
 qname = os.environ['slack_Queue_Name']
 ctregion = os.environ['CloudTrailRegion']
-sqs_queue_url = os.environ['SQS_URL']
 
-sqs_client = boto3.client('sqs')
 sqs = boto3.resource('sqs')
 queue = sqs.get_queue_by_name(QueueName=qname)
 
@@ -24,17 +21,9 @@ logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     while True:
-        try:
-            msg_list = queue.receive_messages(
-                QueueUrl=sqs_queue_url,
-                MaxNumberOfMessages=1,
-                WaitTimeSeconds=0,
-                VisibilityTimeout=0
-            )
-        except ClientError as e:
-            logging.error(e)
-            break
-        if msg_list is not None:
+        msg_list = queue.receive_messages()
+        print(msg_list)
+        if msg_list:
             for message in msg_list:
                 
                 json_dict = json.loads(message.body)
@@ -83,14 +72,9 @@ def lambda_handler(event, context):
                 try:
                     response = urlopen(req)
                     response.read()
-                    logger.info("Message posted to %s", SLACK_CHANNEL)
+                    logger.info("[INFO] Message posted to %s", SLACK_CHANNEL)
                     message.delete()
-                    """
-                    message.delete(
-                        QueueUrl=sqs_queue_url,
-                        ReceiptHandle=message['receipt_handle']
-                    )
-                    """
+                    
                 except HTTPError as e:
                     logger.error("Request failed: %d %s", e.code, e.reason)
                 except URLError as e:
