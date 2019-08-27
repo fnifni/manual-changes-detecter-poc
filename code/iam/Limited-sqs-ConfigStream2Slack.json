@@ -9,7 +9,7 @@
                 "sqs:ReceiveMessage",
                 "sqs:GetQueueAttributes"
             ],
-            "Resource": "arn:aws:sqs:<region>:<aws account id>:ConfigStream2slack"
+            "Resource": "arn:aws:sqs:<region>:<aws account id>:Slack_SQS"
         },
         {
             "Effect": "Allow",

@@ -10,7 +10,7 @@
                 "sqs:ReceiveMessage",
                 "sqs:GetQueueAttributes"
             ],
-            "Resource": "arn:aws:sqs:<region>:<AWS Acclount ID>:ConfigStreamQueue.fifo"
+            "Resource": "arn:aws:sqs:<region>:<AWS Acclount ID>:Lookup_SQS.fifo"
         },
         {
             "Effect": "Allow",
@@ -19,7 +19,7 @@
                 "sqs:SendMessage",
                 "sqs:GetQueueAttributes"
             ],
-            "Resource": "arn:aws:sqs:<region>:<AWS Acclount ID>:ConfigStream2slack"
+            "Resource": "arn:aws:sqs:<region>:<AWS Acclount ID>:Slack_SQS"
         },
         {
             "Effect": "Allow",

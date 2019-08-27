@@ -9,7 +9,7 @@
                 "sqs:ReceiveMessage",
                 "sqs:GetQueueAttributes"
             ],
-            "Resource": "arn:aws:sqs:<region>:<aws account id>:ConfigStreamQueue"
+            "Resource": "arn:aws:sqs:<region>:<aws account id>:Dispatch_SQS"
         },
         {
             "Effect": "Allow",
@@ -18,7 +18,7 @@
                 "sqs:SendMessage",
                 "sqs:GetQueueAttributes"
             ],
-            "Resource": "arn:aws:sqs:<region>:<aws account id>:ConfigStreamQueue.fifo"
+            "Resource": "arn:aws:sqs:<region>:<aws account id>:Lookup_SQS.fifo"
         },
         {
             "Effect": "Allow",
