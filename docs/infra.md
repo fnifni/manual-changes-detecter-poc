@@ -16,7 +16,7 @@ Queue Type
 ### Add Permissions
 Principals
 
-- arn:aws:iam::<aws account id>:root
+- arn:aws:iam::AWS_ACCOUNT_ID:root
 
 Actions
 
@@ -24,7 +24,7 @@ Actions
  
 Resource
 
-- arn:aws:sqs:<region>:<aws account id>:ConfigStreamQueue
+- arn:aws:sqs:REGION:AWS_ACCOUNT_ID:ConfigStreamQueue
 
 ## ConfigStreamQueue.fifo
 Queue Name
@@ -61,7 +61,7 @@ Protocol
 
 Endpoint
 
-- arn:aws:sqs:<region>:<aws account id>:ConfigStreamQueue
+- arn:aws:sqs:REGION:AWS_ACCOUNT_ID:ConfigStreamQueue
 
 # s3
 - 必要に応じて作成
@@ -129,7 +129,7 @@ SQSやバケット名などを変更している場合は、適宜置き換え�
 
 |key|value|
 |:---|:---|
-|Trust_arn|(記入例) arn:aws:sts::<aws account id>:assumed-role/AWSServiceRoleForAWSCloud9/aws-cloud9,arn:aws:sts::<aws account id>:assumed-role/AWSServiceRoleForAWSCloud8/aws-cloud8|
+|Trust_arn|(記入例) arn:aws:sts::AWS_ACCOUNT_ID:assumed-role/AWSServiceRoleForAWSCloud9/aws-cloud9,arn:aws:sts::AWS_ACCOUNT_ID:assumed-role/AWSServiceRoleForAWSCloud8/aws-cloud8|
 |slack_Queue_Name|ConfigStream2slack|
 |exclude_resouce_type|AWS::SSM::ManagedInstanceInventory|
 |dispatch_Queue_Name|ConfigStreamQueue.fifo|
@@ -163,7 +163,7 @@ Code
 |slack_Queue_Name|ConfigStream2slack|
 |WebHookUrl|https://hooks.slack.com/services/xxxxx/yyyyy|
 |slackChannel|#channel-name|
-|SQS_URL|https://sqs.<region>.amazonaws.com/<aws account id>/ConfigStream2slack|
+|SQS_URL|https://sqs.REGION.amazonaws.com/AWS_ACCOUNT_ID/ConfigStream2slack|
 
 ### Role Attached Policy
 - [Limited-sqs-ConfigStream2Slack.json](/code/iam/Limited-sqs-ConfigStream2Slack.json)
