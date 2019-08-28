@@ -46,8 +46,7 @@ EventID
 1. Lambda(Dispacher)が、読みだしたメッセージをs3に保存
 1. Lambda(Dispacher)が、処理対象の情報が含まれているメッセージを、SQS(Lookup_SQS)にキューイング
 1. Lambda(Dispacher)が、読み込んだメッセージを削除
-1. Lambda(Lookupper)が、SQS(Lookup_SQS)からメッセージを読み出して、タイムスタンプとリソースタイプをキーにCloudTrailをLookup
-  - Lookupできない場合、SQS(Lookup_SQS)にメッセージを書き戻す
+1. Lambda(Lookupper)が、SQS(Lookup_SQS)からメッセージを読み出して、タイムスタンプとリソースタイプをキーにCloudTrailをLookupする。Lookupの結果が空の場合、SQS(Lookup_SQS)にメッセージを書き戻す
 1. Lambda(Lookupper)が、処理対象の情報を選別し、通知に用いる情報を抽出/整形して、SQS(SendSlack_SQS)にキューイング
 1. Lambda(Lookupper)が、読み込んだメッセージを削除
 1. Lambda(SendSlack)が、SQS(SendSlack_SQS)からメッセージを読み出し
