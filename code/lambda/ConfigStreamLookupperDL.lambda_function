@@ -6,17 +6,15 @@ import datetime
 import pprint
 from datetime import timedelta
 
-qname1 = os.environ['Lookup_Queue_Name']
+qname1 = os.environ['Lookup_Queue_DL_Name']
 qname2 = os.environ['slack_Queue_Name']
-qname3 = os.environ['Lookup_Queue_DL_Name']
+
 
 sqs_client = boto3.client('sqs')
 sqs = boto3.resource('sqs')
 ctclient = boto3.client('cloudtrail')
 queue1 = sqs.get_queue_by_name(QueueName=qname1)
 queue2 = sqs.get_queue_by_name(QueueName=qname2)
-queue3 = sqs.get_queue_by_name(QueueName=qname3)
-excluder = os.environ['exclude_resouce_type']
 trustarn = os.environ['Trust_arn']
 trustarry = trustarn.split(',')
 print(trustarry)
@@ -29,12 +27,8 @@ def lambda_handler(event, context):
                 cbody = json.loads(message.body)
                 ctime = cbody['configurationItem']['configurationItemCaptureTime']
                 cresouce = cbody['configurationItem']['resourceType']
-                if excluder in cresouce:
-                    print('[INFO]: Skipping operation because it is a exclude resouce type')
-                    message.delete()
-                    continue    
                 cdt = datetime.datetime.strptime(ctime, '%Y-%m-%dT%H:%M:%S.%fZ')
-                tdt = cdt - timedelta(seconds=300)
+                tdt = cdt - timedelta(seconds=600)
                 ourl = cbody['s3url']
 
                 # lookup CloudTrail event
@@ -97,12 +91,7 @@ def lambda_handler(event, context):
                         print('[INFO] Send to Slack_SQS message: ', ctdata)
                         message.delete()
                 else:
-                    print('[INFO] The lookup-event result was empty. Send to Lookup_SQS_DL: ', cbody)
+                    print('[WARN] The lookup-event result was empty. Delete message: ', cbody)
                     message.delete()
-                    cjson = json.dumps(cbody)
-                    # resend sqs
-                    ret = queue3.send_message(MessageBody=cjson,MessageGroupId='config-stream-dispatcher')
-                    print('[INFO] Send to Lookup_SQS_DL status:', ret)
-
         else:   
             break

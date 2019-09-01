@@ -63,7 +63,35 @@ Queue Type
 
 Delivery Delay
 
-- 5min
+- 15min
+
+Content-Based Deduplication
+
+- Enable
+
+### Dead Letter Queue Settings
+[*] Use Redrive Policy
+
+Dead Letter Queue
+
+- Lookup_SQS_DL.fifo
+
+Maximum Receives
+
+- 1000
+
+## Lookup_SQS_DL.fifo
+Queue Name
+
+- Lookup_SQS_DL.fifo
+
+Queue Type
+
+- FIFO
+
+Delivery Delay
+
+- 15min
 
 Content-Based Deduplication
 
@@ -160,7 +188,36 @@ Code
 |Trust_arn|(記入例) arn:aws:sts::AWS_ACCOUNT_ID:assumed-role/AWSServiceRoleForAWSCloud9/aws-cloud9,arn:aws:sts::AWS_ACCOUNT_ID:assumed-role/AWSServiceRoleForAWSCloud8/aws-cloud8|
 |slack_Queue_Name|Slack_SQS|
 |exclude_resouce_type|AWS::SSM::ManagedInstanceInventory|
-|dispatch_Queue_Name|Lookup_SQS.fifo|
+|Lookup_Queue_Name|Lookup_SQS.fifo|
+|Lookup_Queue_DL_Name|Lookup_SQS_DL.fifo|
+
+### Role Attached Policy
+- [Limited-CloudTrail-lookupevents.json](/code/iam/Limited-CloudTrail-lookupevents.json)
+- [Limited-sqs-ConfigStreamLookupper.json](/code/iam/Limited-sqs-ConfigStreamLookupper.json)
+- AWSLambdaBasicExecutionRoleは、Lambda作成時に作成されているものを利用する
+
+### Basic settings
+Timeout
+
+- 5min
+
+## ConfigStreamLookupperDL
+Runtime
+
+- python3.6
+
+Code
+
+- [ConfigStreamLookupperDL.lambda_function](/code/lambda/ConfigStreamLookupperDL.lambda_function)
+
+### Environment variables
+- SQSを変更している場合は、適宜置き換えてること
+
+|key|value|
+|:---|:---|
+|slack_Queue_Name|Slack_SQS|
+|Lookup_Queue_Name|Lookup_SQS.fifo|
+|Lookup_Queue_DL_Name|Lookup_SQS_DL.fifo|
 
 ### Role Attached Policy
 - [Limited-CloudTrail-lookupevents.json](/code/iam/Limited-CloudTrail-lookupevents.json)
